@@ -1,0 +1,82 @@
+# ===== 共通（デフォルト）=====
+spring:
+  application:
+    name: todo-app
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc.time_zone: Asia/Tokyo
+  datasource:
+    # ここはプロファイル毎に上書き。念のためキーだけ定義しておく
+    url: ${DB_URL:}
+    username: ${DB_USER:}
+    password: ${DB_PASSWORD:}
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 8080
+  shutdown: graceful
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: INFO
+  pattern:
+    # 追跡容易化（将来の分散トレース導入にも対応しやすい）
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg %n"
+
+---
+# ===== local =====
+spring:
+  config:
+    activate:
+      on-profile: local
+  jpa:
+    hibernate:
+      ddl-auto: update  # 学習・検証の便宜（本番はしない）
+
+# ローカルの例：docker-composeのdbを使う
+# DB_URL/USER/PASSWORD は .env で渡す（例は下記）
+# DB_URL: jdbc:postgresql://localhost:5432/todo
+# DB_USER: app
+# DB_PASSWORD: secret
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+---
+# ===== prod =====
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  datasource:
+    hikari:
+      # コネクションプール（本番向け）
+      maximum-pool-size: 15
+      minimum-idle: 2
+      idle-timeout: 60000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
+server:
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
